@@ -49,31 +49,32 @@
     }
     #rankingBarWrapper {
       position: relative;
+      height: 40px;
       overflow: hidden;
     }
     #updateBar {
       position: absolute;
-      width: 100%;
       top: 0;
       left: 0;
       z-index: 0;
+      width: 100%;
       background: #b2ebf2;
       color: #006064;
       font-size: 14px;
-      padding: 5px;
+      padding: 10px;
       white-space: nowrap;
       animation: scrollUpdate 25s linear infinite;
     }
     #rankingBar {
       position: relative;
-      background: #0d47a1;
+      z-index: 1;
+      background: transparent;
       color: white;
       padding: 10px;
       font-weight: bold;
       font-size: 14px;
       white-space: nowrap;
       overflow: hidden;
-      z-index: 1;
     }
     #rankingText {
       display: inline-block;
@@ -119,7 +120,7 @@
 
 <div id="rankingBarWrapper">
   <div id="updateBar">🔔 Versi 3.0 - Semua Fitur Aktif!</div>
-  <div id="rankingBar"><div id="rankingText">🏅 Peringkat Tertinggi akan tampil di sini...</div></div>
+  <div id="rankingBar"><div id="rankingText"></div></div>
 </div>
 <div id="clock"></div>
 <div id="notification"></div>
@@ -134,6 +135,7 @@
   <h2>🛠️ Admin Panel</h2>
   <textarea id="infoMessage" rows="3" placeholder="Edit pengumuman berjalan..."></textarea>
   <button onclick="simpanPemberitahuan()">Simpan Pemberitahuan</button>
+  <button onclick="resetPemberitahuan()">Reset Pemberitahuan</button>
   <input id="newQuestion" placeholder="Tulis soal baru" />
   <input id="optA" placeholder="Pilihan A" />
   <input id="optB" placeholder="Pilihan B" />
@@ -150,8 +152,12 @@
     <option value="">Pilih Kategori</option>
     <option value="IPA">IPA</option>
     <option value="IPS">IPS</option>
-    <option value="Bahasa">Bahasa Indonesia</option>
-    <option value="MTK">Matematika</option>
+    <option value="Bahasa Indonesia">Bahasa Indonesia</option>
+    <option value="Agama">Agama</option>
+    <option value="Bahasa Inggris">Bahasa Inggris</option>
+    <option value="PJOK">PJOK</option>
+    <option value="Mulok">Mulok</option>
+    <option value="MTK">MTK</option>
   </select>
   <button onclick="simpanSoal()">Simpan Soal</button>
 </div>
@@ -173,46 +179,53 @@
 </footer>
 
 <script>
+let currentUser = "";
+let score = 0;
+let currentQuestionIndex = 0;
+let questions = [];
+
 function startClock() {
   setInterval(() => {
     const now = new Date();
-    const timeStr = now.toLocaleTimeString();
-    const clock = document.getElementById("clock");
-    if (clock) clock.innerText = `🕒 Waktu Sekarang: ${timeStr}`;
+    document.getElementById("clock").innerText = `🕒 Waktu Sekarang: ${now.toLocaleTimeString()}`;
   }, 1000);
-}
-
-function showNotification(message) {
-  const noti = document.getElementById("notification");
-  if (!noti) return;
-  noti.innerText = message;
-  noti.style.display = "block";
-  noti.style.opacity = "1";
-  setTimeout(() => {
-    noti.style.opacity = "0";
-    setTimeout(() => noti.style.display = "none", 500);
-  }, 4000);
 }
 
 function tampilkanPeringkat() {
   const rankingText = document.getElementById("rankingText");
-  if (!rankingText) return;
   const leaderboard = JSON.parse(localStorage.getItem("leaderboard_global") || "[]");
-  if (leaderboard.length === 0) return;
-  const text = leaderboard.map((p, i) => `🥇 ${i + 1}. ${p.username} (${p.score} poin)`).join(" | ");
-  rankingText.innerText = text;
+  rankingText.innerText = leaderboard.map((p, i) => `🥇 ${i + 1}. ${p.username} (${p.score} poin)`).join(" | ");
 }
 
 function muatNotifikasi() {
   const updateBar = document.getElementById("updateBar");
-  if (!updateBar) return;
-  const savedUpdate = localStorage.getItem("updateMessage") || "🔔 Versi 3.0 - Semua Fitur Aktif oleh ABDUL SUKUR ✨";
+  const savedUpdate = localStorage.getItem("updateMessage") || updateBar.innerText;
   updateBar.innerText = savedUpdate;
+  const infoInput = document.getElementById("infoMessage");
+  if (infoInput) infoInput.value = savedUpdate;
+}
+
+function simpanPemberitahuan() {
+  const pesan = document.getElementById("infoMessage").value.trim();
+  if (!pesan) return alert("Isi tidak boleh kosong!");
+  localStorage.setItem("updateMessage", pesan);
+  muatNotifikasi();
+  alert("✅ Pemberitahuan berhasil disimpan!");
+}
+
+function resetPemberitahuan() {
+  const defaultMessage = "🔔 Versi 3.0 - Semua Fitur Aktif!";
+  localStorage.setItem("updateMessage", defaultMessage);
+  muatNotifikasi();
+  const infoInput = document.getElementById("infoMessage");
+  if (infoInput) infoInput.value = defaultMessage;
+  alert("♻️ Pemberitahuan telah direset!");
 }
 
 function login() {
   const uname = document.getElementById("username").value.trim();
   if (!uname) return alert("Masukkan username!");
+  currentUser = uname;
 
   if (uname === "123") {
     document.getElementById("loginContainer").style.display = "none";
@@ -221,115 +234,83 @@ function login() {
   }
 
   if (uname === "1234") {
-    if (confirm("Reset semua peringkat dan tampilkan panel admin?")) {
+    if (confirm("Reset semua leaderboard?")) {
       localStorage.removeItem("leaderboard_global");
-      alert("Peringkat berhasil direset!");
+      alert("Leaderboard berhasil direset.");
+      location.reload();
     }
-    document.getElementById("loginContainer").style.display = "none";
-    document.getElementById("adminContainer").style.display = "block";
     return;
   }
 
-  localStorage.setItem("currentUser", uname);
+  document.getElementById("loginContainer").style.display = "none";
   mulaiKuis();
 }
 
 function mulaiKuis() {
-  document.getElementById("loginContainer").style.display = "none";
-  document.getElementById("quizContainer").style.display = "block";
-  const username = localStorage.getItem("currentUser");
-
-  const categories = ["IPA", "IPS", "Bahasa", "MTK"];
-  let allQuestions = [];
-
-  categories.forEach(cat => {
-    const q = JSON.parse(localStorage.getItem("questions_" + cat) || "[]");
-    allQuestions = allQuestions.concat(q);
+  const kategori = ["IPA", "IPS", "Bahasa Indonesia", "Agama", "Bahasa Inggris", "PJOK", "Mulok", "MTK"];
+  questions = [];
+  kategori.forEach(k => {
+    const data = JSON.parse(localStorage.getItem("questions_" + k) || "[]");
+    questions.push(...data);
   });
 
-  const answeredKey = "answered_" + username;
-  const answered = JSON.parse(localStorage.getItem(answeredKey) || "[]");
-  const answeredQuestions = answered.map(q => q.question);
-
-  const remaining = allQuestions.filter(q => !answeredQuestions.includes(q.question));
-  if (remaining.length === 0) {
-    alert("🎉 Semua soal sudah dijawab!");
-    location.reload();
-    return;
-  }
-
-  soalAcak = remaining.sort(() => 0.5 - Math.random()).slice(0, 10);
-  currentIndex = 0;
-  currentScore = 0;
-  tampilSoal();
+  questions = questions.sort(() => Math.random() - 0.5).slice(0, 10);
+  currentQuestionIndex = 0;
+  score = 0;
+  tampilkanSoal();
 }
 
-let soalAcak = [];
-let currentIndex = 0;
-let currentScore = 0;
-
-function tampilSoal() {
-  if (currentIndex >= soalAcak.length) {
-    selesaiKuis();
-    return;
-  }
-  const q = soalAcak[currentIndex];
+function tampilkanSoal() {
+  if (currentQuestionIndex >= questions.length) return akhiriKuis();
+  const q = questions[currentQuestionIndex];
+  document.getElementById("quizContainer").style.display = "block";
   document.getElementById("questionText").innerText = q.question;
-  document.getElementById("options").innerHTML = Object.entries(q.options).map(([k,v]) => `<button onclick="jawab('${k}', '${q.answer}')">${k}. ${v}</button>`).join("");
+  const opsi = Object.entries(q.options || { A: "", B: "", C: "", D: "" }).map(([k, v]) => {
+    return `<button onclick="jawab('${k}', '${q.answer}')">${k}. ${v}</button>`;
+  }).join("<br>");
+  document.getElementById("options").innerHTML = opsi;
 }
 
-function jawab(pilih, benar) {
-  const username = localStorage.getItem("currentUser");
-  const answeredKey = "answered_" + username;
-  const answered = JSON.parse(localStorage.getItem(answeredKey) || "[]");
-  answered.push(soalAcak[currentIndex]);
-  localStorage.setItem(answeredKey, JSON.stringify(answered));
-
-  if (pilih === benar) {
-    currentScore += 10;
-    showNotification("✅ Jawaban Benar!");
-  } else {
-    showNotification("❌ Jawaban Salah!");
-  }
-  currentIndex++;
-  setTimeout(tampilSoal, 1000);
+function jawab(pilihan, benar) {
+  if (pilihan === benar) score++;
+  currentQuestionIndex++;
+  tampilkanSoal();
 }
 
-function selesaiKuis() {
+function akhiriKuis() {
   document.getElementById("quizContainer").style.display = "none";
   document.getElementById("scoreContainer").style.display = "block";
-  document.getElementById("finalScore").innerText = `Skor Anda: ${currentScore} poin`;
-  const user = localStorage.getItem("currentUser");
-  const data = JSON.parse(localStorage.getItem("leaderboard_global") || "[]");
-  const existing = data.find(d => d.username === user);
-  if (existing) existing.score = Math.max(existing.score, currentScore);
-  else data.push({ username: user, score: currentScore });
-  localStorage.setItem("leaderboard_global", JSON.stringify(data));
+  document.getElementById("finalScore").innerText = `${currentUser}, skor akhir kamu: ${score}/10`;
+  const leaderboard = JSON.parse(localStorage.getItem("leaderboard_global") || "[]");
+  leaderboard.push({ username: currentUser, score });
+  leaderboard.sort((a, b) => b.score - a.score);
+  localStorage.setItem("leaderboard_global", JSON.stringify(leaderboard.slice(0, 10)));
   tampilkanPeringkat();
 }
 
-function simpanPemberitahuan() {
-  const msg = document.getElementById("infoMessage").value.trim();
-  if (!msg) return;
-  localStorage.setItem("updateMessage", msg);
-  muatNotifikasi();
-  alert("✅ Pemberitahuan diperbarui!");
-}
-
 function simpanSoal() {
-  const soal = document.getElementById("newQuestion").value.trim();
-  const A = document.getElementById("optA").value.trim();
-  const B = document.getElementById("optB").value.trim();
-  const C = document.getElementById("optC").value.trim();
-  const D = document.getElementById("optD").value.trim();
-  const benar = document.getElementById("correctAnswer").value;
-  const kategori = document.getElementById("questionCategory").value;
-  if (!soal || !A || !B || !C || !D || !benar || !kategori) return alert("Lengkapi semua!");
-  const data = JSON.parse(localStorage.getItem("questions_" + kategori) || "[]");
-  data.push({ question: soal, options: { A, B, C, D }, answer: benar });
-  localStorage.setItem("questions_" + kategori, JSON.stringify(data));
-  alert("✅ Soal ditambahkan ke " + kategori);
+  const q = document.getElementById("newQuestion").value.trim();
+  const a = document.getElementById("optA").value.trim();
+  const b = document.getElementById("optB").value.trim();
+  const c = document.getElementById("optC").value.trim();
+  const d = document.getElementById("optD").value.trim();
+  const ans = document.getElementById("correctAnswer").value;
+  const cat = document.getElementById("questionCategory").value;
+  if (!q || !a || !b || !c || !d || !ans || !cat) return alert("Lengkapi semua kolom!");
+  const soal = { question: q, options: { A: a, B: b, C: c, D: d }, answer: ans };
+  const bank = JSON.parse(localStorage.getItem("questions_" + cat) || "[]");
+  bank.push(soal);
+  localStorage.setItem("questions_" + cat, JSON.stringify(bank));
+  alert("Soal disimpan di kategori " + cat);
+  document.getElementById("newQuestion").value = "";
+  document.getElementById("optA").value = "";
+  document.getElementById("optB").value = "";
+  document.getElementById("optC").value = "";
+  document.getElementById("optD").value = "";
+  document.getElementById("correctAnswer").value = "";
+  document.getElementById("questionCategory").value = "";
 }
 </script>
+
 </body>
 </html>
