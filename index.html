@@ -133,33 +133,51 @@
 
 <div id="adminContainer" style="display:none">
   <h2>🛠️ Admin Panel</h2>
-  <textarea id="infoMessage" rows="3" placeholder="Edit pengumuman berjalan..."></textarea>
-  <button onclick="simpanPemberitahuan()">Simpan Pemberitahuan</button>
-  <button onclick="resetPemberitahuan()">Reset Pemberitahuan</button>
-  <input id="newQuestion" placeholder="Tulis soal baru" />
-  <input id="optA" placeholder="Pilihan A" />
-  <input id="optB" placeholder="Pilihan B" />
-  <input id="optC" placeholder="Pilihan C" />
-  <input id="optD" placeholder="Pilihan D" />
-  <select id="correctAnswer">
-    <option value="">Jawaban Benar</option>
-    <option value="A">A</option>
-    <option value="B">B</option>
-    <option value="C">C</option>
-    <option value="D">D</option>
-  </select>
-  <select id="questionCategory">
-    <option value="">Pilih Kategori</option>
-    <option value="IPA">IPA</option>
-    <option value="IPS">IPS</option>
-    <option value="Bahasa Indonesia">Bahasa Indonesia</option>
-    <option value="Agama">Agama</option>
-    <option value="Bahasa Inggris">Bahasa Inggris</option>
-    <option value="PJOK">PJOK</option>
-    <option value="Mulok">Mulok</option>
-    <option value="MTK">MTK</option>
-  </select>
-  <button onclick="simpanSoal()">Simpan Soal</button>
+
+  <div id="announcementSection">
+    <h3>📢 Pengumuman Berjalan</h3>
+    <textarea id="infoMessage" rows="3" placeholder="Edit pengumuman berjalan..."></textarea>
+    <button onclick="simpanPemberitahuan()">Simpan Pemberitahuan</button>
+    <button onclick="resetPemberitahuan()">Reset Pemberitahuan</button>
+    <hr>
+  </div>
+
+  <div id="addQuestionSection">
+    <h3>➕ Tambah Soal Baru</h3>
+    <input id="newQuestion" placeholder="Tulis soal baru" />
+    <input id="optA" placeholder="Pilihan A" />
+    <input id="optB" placeholder="Pilihan B" />
+    <input id="optC" placeholder="Pilihan C" />
+    <input id="optD" placeholder="Pilihan D" />
+    <select id="correctAnswer">
+      <option value="">Jawaban Benar</option>
+      <option value="A">A</option>
+      <option value="B">B</option>
+      <option value="C">C</option>
+      <option value="D">D</option>
+    </select>
+    <select id="questionCategory">
+      <option value="">Pilih Kategori</option>
+      
+</select>
+    <button onclick="simpanSoal()">Simpan Soal</button>
+    <hr>
+  </div>
+
+  <div id="deleteQuestionSection">
+    <h3>🗑️ Hapus Soal</h3>
+    <select id="deleteCategory" onchange="loadQuestionsForDeletion()">
+      <option value="">Pilih Kategori untuk Dihapus</option>
+      
+</select>
+    <select id="questionToDelete">
+      <option value="">Pilih Soal untuk Dihapus</option>
+    </select>
+    <button onclick="deleteSelectedQuestion()">Hapus Soal Terpilih</button>
+  </div>
+  
+  
+<button onclick="goToHomePage()">Kembali ke Halaman Utama</button>
 </div>
 
 <div id="quizContainer" style="display:none">
@@ -182,8 +200,9 @@
 let currentUser = "";
 let score = 0;
 let currentQuestionIndex = 0;
-let questions = [];
+let questions = []; // Soal yang akan digunakan dalam kuis saat ini
 
+// Fungsi untuk memulai jam
 function startClock() {
   setInterval(() => {
     const now = new Date();
@@ -191,28 +210,43 @@ function startClock() {
   }, 1000);
 }
 
+// Fungsi untuk menampilkan peringkat
 function tampilkanPeringkat() {
   const rankingText = document.getElementById("rankingText");
   const leaderboard = JSON.parse(localStorage.getItem("leaderboard_global") || "[]");
-  rankingText.innerText = leaderboard.map((p, i) => `🥇 ${i + 1}. ${p.username} (${p.score} poin)`).join(" | ");
+  if (leaderboard.length > 0) {
+    rankingText.innerText = leaderboard.map((p, i) => `🥇 ${i + 1}. ${p.username} (${p.score} poin)`).join(" | ");
+  } else {
+    rankingText.innerText = "Belum ada skor tercatat. Jadilah yang pertama!";
+  }
 }
 
+// Fungsi untuk memuat notifikasi/pengumuman
 function muatNotifikasi() {
   const updateBar = document.getElementById("updateBar");
-  const savedUpdate = localStorage.getItem("updateMessage") || updateBar.innerText;
-  updateBar.innerText = savedUpdate;
+  const savedUpdate = localStorage.getItem("updateMessage");
+  if (savedUpdate !== null) {
+    updateBar.innerText = savedUpdate;
+  } else {
+    localStorage.setItem("updateMessage", updateBar.innerText);
+  }
   const infoInput = document.getElementById("infoMessage");
-  if (infoInput) infoInput.value = savedUpdate;
+  if (infoInput) infoInput.value = updateBar.innerText;
 }
 
+// Fungsi untuk menyimpan pemberitahuan dari admin
 function simpanPemberitahuan() {
   const pesan = document.getElementById("infoMessage").value.trim();
-  if (!pesan) return alert("Isi tidak boleh kosong!");
+  if (!pesan) {
+    alert("Isi tidak boleh kosong!");
+    return;
+  }
   localStorage.setItem("updateMessage", pesan);
   muatNotifikasi();
   alert("✅ Pemberitahuan berhasil disimpan!");
 }
 
+// Fungsi untuk mereset pemberitahuan ke default
 function resetPemberitahuan() {
   const defaultMessage = "🔔 Versi 3.0 - Semua Fitur Aktif!";
   localStorage.setItem("updateMessage", defaultMessage);
@@ -222,21 +256,45 @@ function resetPemberitahuan() {
   alert("♻️ Pemberitahuan telah direset!");
 }
 
+// Fungsi untuk proses login
 function login() {
   const uname = document.getElementById("username").value.trim();
-  if (!uname) return alert("Masukkan username!");
+  if (!uname) {
+    alert("Masukkan username!");
+    return;
+  }
   currentUser = uname;
+
+  document.getElementById("adminContainer").style.display = "none";
+  document.getElementById("announcementSection").style.display = "none";
+  document.getElementById("addQuestionSection").style.display = "none";
+  document.getElementById("deleteQuestionSection").style.display = "none";
 
   if (uname === "123") {
     document.getElementById("loginContainer").style.display = "none";
     document.getElementById("adminContainer").style.display = "block";
+    document.getElementById("announcementSection").style.display = "block";
+    document.getElementById("addQuestionSection").style.display = "block";
+    document.getElementById("deleteQuestionSection").style.display = "block";
+    populateCategoryDropdowns();
+    muatNotifikasi();
+    return;
+  }
+
+  if (uname === "#22") {
+    document.getElementById("loginContainer").style.display = "none";
+    document.getElementById("adminContainer").style.display = "block";
+    document.getElementById("deleteQuestionSection").style.display = "block";
+    populateCategoryDropdowns();
+    loadQuestionsForDeletion();
     return;
   }
 
   if (uname === "1234") {
-    if (confirm("Reset semua leaderboard?")) {
+    if (confirm("Reset semua leaderboard? Tindakan ini tidak dapat dibatalkan.")) {
       localStorage.removeItem("leaderboard_global");
       alert("Leaderboard berhasil direset.");
+      tampilkanPeringkat();
       location.reload();
     }
     return;
@@ -246,48 +304,111 @@ function login() {
   mulaiKuis();
 }
 
+// Fungsi untuk memulai kuis
 function mulaiKuis() {
-  const kategori = ["IPA", "IPS", "Bahasa Indonesia", "Agama", "Bahasa Inggris", "PJOK", "Mulok", "MTK"];
-  questions = [];
-  kategori.forEach(k => {
+  const allCategories = ["IPA", "IPS", "Bahasa Indonesia", "Agama", "Bahasa Inggris", "PJOK", "Mulok", "MTK", "Umum"];
+  let allAvailableQuestions = [];
+  let answeredQuestionIds = JSON.parse(localStorage.getItem(`answered_questions_${currentUser}`) || "[]");
+
+  // Kumpulkan semua soal dari berbagai kategori
+  allCategories.forEach(k => {
     const data = JSON.parse(localStorage.getItem("questions_" + k) || "[]");
-    questions.push(...data);
+    allAvailableQuestions.push(...data);
   });
 
-  questions = questions.sort(() => Math.random() - 0.5).slice(0, 10);
+  if (allAvailableQuestions.length === 0) {
+    alert("Maaf, belum ada soal tersedia. Harap hubungi admin untuk menambahkan soal.");
+    location.reload();
+    return;
+  }
+
+  // Pisahkan soal yang belum pernah dijawab dan yang sudah pernah dijawab
+  let newQuestions = allAvailableQuestions.filter(q => !answeredQuestionIds.includes(q.id));
+  let oldQuestions = allAvailableQuestions.filter(q => answeredQuestionIds.includes(q.id));
+
+  // Acak soal baru dan ambil sebanyak mungkin (maksimal 10)
+  newQuestions = newQuestions.sort(() => Math.random() - 0.5);
+  questions = newQuestions.slice(0, 10);
+
+  // Jika jumlah soal baru kurang dari 10, tambahkan soal lama secara acak
+  if (questions.length < 10) {
+    const needed = 10 - questions.length;
+    oldQuestions = oldQuestions.sort(() => Math.random() - 0.5); // Acak soal lama
+    questions.push(...oldQuestions.slice(0, needed));
+  }
+
+  // Pastikan total soal tidak lebih dari 10
+  questions = questions.slice(0, 10);
+
+  // Jika setelah semua upaya masih tidak ada soal, beri tahu pengguna
+  if (questions.length === 0) {
+      alert("Tidak ada soal yang tersedia untuk kuis ini. Coba lagi nanti atau hubungi admin.");
+      location.reload();
+      return;
+  }
+
   currentQuestionIndex = 0;
   score = 0;
+  document.getElementById("quizContainer").style.display = "block";
   tampilkanSoal();
 }
 
+// Fungsi untuk menampilkan soal
 function tampilkanSoal() {
-  if (currentQuestionIndex >= questions.length) return akhiriKuis();
+  if (currentQuestionIndex >= questions.length) {
+    akhiriKuis();
+    return;
+  }
   const q = questions[currentQuestionIndex];
-  document.getElementById("quizContainer").style.display = "block";
   document.getElementById("questionText").innerText = q.question;
-  const opsi = Object.entries(q.options || { A: "", B: "", C: "", D: "" }).map(([k, v]) => {
-    return `<button onclick="jawab('${k}', '${q.answer}')">${k}. ${v}</button>`;
-  }).join("<br>");
-  document.getElementById("options").innerHTML = opsi;
+
+  const opsiContainer = document.getElementById("options");
+  opsiContainer.innerHTML = '';
+  const optionsMap = q.options || { A: "", B: "", C: "", D: "" };
+
+  const sortedKeys = Object.keys(optionsMap).sort();
+
+  sortedKeys.forEach(key => {
+    const button = document.createElement("button");
+    button.onclick = () => jawab(key, q.answer);
+    button.innerText = `${key}. ${optionsMap[key]}`;
+    opsiContainer.appendChild(button);
+  });
 }
 
+// Fungsi untuk memproses jawaban
 function jawab(pilihan, benar) {
-  if (pilihan === benar) score++;
+  if (pilihan === benar) {
+    score++;
+  }
   currentQuestionIndex++;
   tampilkanSoal();
 }
 
+// Fungsi untuk mengakhiri kuis
 function akhiriKuis() {
   document.getElementById("quizContainer").style.display = "none";
   document.getElementById("scoreContainer").style.display = "block";
   document.getElementById("finalScore").innerText = `${currentUser}, skor akhir kamu: ${score}/10`;
+
+  // Simpan skor ke leaderboard
   const leaderboard = JSON.parse(localStorage.getItem("leaderboard_global") || "[]");
-  leaderboard.push({ username: currentUser, score });
+  leaderboard.push({ username: currentUser, score: score });
   leaderboard.sort((a, b) => b.score - a.score);
   localStorage.setItem("leaderboard_global", JSON.stringify(leaderboard.slice(0, 10)));
   tampilkanPeringkat();
+
+  // --- BAGIAN BARU: Simpan ID soal yang sudah dijawab ---
+  let answeredQuestionIds = JSON.parse(localStorage.getItem(`answered_questions_${currentUser}`) || "[]");
+  const currentQuizQuestionIds = questions.map(q => q.id).filter(id => id); // Ambil ID soal yang dimainkan
+  
+  // Gabungkan dan pastikan tidak ada duplikasi
+  const updatedAnsweredIds = [...new Set([...answeredQuestionIds, ...currentQuizQuestionIds])];
+  localStorage.setItem(`answered_questions_${currentUser}`, JSON.stringify(updatedAnsweredIds));
+  // --- AKHIR BAGIAN BARU ---
 }
 
+// Fungsi untuk menyimpan soal baru oleh admin
 function simpanSoal() {
   const q = document.getElementById("newQuestion").value.trim();
   const a = document.getElementById("optA").value.trim();
@@ -296,20 +417,122 @@ function simpanSoal() {
   const d = document.getElementById("optD").value.trim();
   const ans = document.getElementById("correctAnswer").value;
   const cat = document.getElementById("questionCategory").value;
-  if (!q || !a || !b || !c || !d || !ans || !cat) return alert("Lengkapi semua kolom!");
-  const soal = { question: q, options: { A: a, B: b, C: c, D: d }, answer: ans };
-  const bank = JSON.parse(localStorage.getItem("questions_" + cat) || "[]");
-  bank.push(soal);
-  localStorage.setItem("questions_" + cat, JSON.stringify(bank));
-  alert("Soal disimpan di kategori " + cat);
+
+  if (!q || !a || !b || !c || !d || !ans || !cat) {
+    alert("Lengkapi semua kolom untuk menambah soal!");
+    return;
+  }
+
+  // --- BAGIAN BARU: Tambahkan ID unik ke soal ---
+  const soalBaru = { id: Date.now(), question: q, options: { A: a, B: b, C: c, D: d }, answer: ans };
+  // --- AKHIR BAGIAN BARU ---
+
+  const bankSoal = JSON.parse(localStorage.getItem("questions_" + cat) || "[]");
+  bankSoal.push(soalBaru);
+  localStorage.setItem("questions_" + cat, JSON.stringify(bankSoal));
+
+  alert("Soal berhasil disimpan di kategori " + cat);
   document.getElementById("newQuestion").value = "";
   document.getElementById("optA").value = "";
   document.getElementById("optB").value = "";
   document.getElementById("optC").value = "";
   document.getElementById("optD").value = "";
   document.getElementById("correctAnswer").value = "";
-  document.getElementById("questionCategory").value = "";
 }
+
+// --- FUNGSI UNTUK HAPUS SOAL DAN KATEGORI ---
+
+// Fungsi untuk mengisi dropdown kategori secara dinamis
+function populateCategoryDropdowns() {
+  const categories = ["IPA", "IPS", "Bahasa Indonesia", "Agama", "Bahasa Inggris", "PJOK", "Mulok", "MTK", "Umum"];
+  const selectElements = ["questionCategory", "deleteCategory"];
+
+  selectElements.forEach(id => {
+    const select = document.getElementById(id);
+    while (select.options.length > 1) {
+      select.remove(1);
+    }
+    categories.forEach(cat => {
+      const option = document.createElement("option");
+      option.value = cat;
+      option.textContent = cat;
+      select.appendChild(option);
+    });
+  });
+}
+
+// Fungsi untuk memuat soal berdasarkan kategori yang dipilih untuk dihapus
+function loadQuestionsForDeletion() {
+  const category = document.getElementById("deleteCategory").value;
+  const questionSelect = document.getElementById("questionToDelete");
+  questionSelect.innerHTML = '<option value="">Pilih Soal untuk Dihapus</option>';
+
+  if (!category) return;
+
+  const questionsBank = JSON.parse(localStorage.getItem("questions_" + category) || "[]");
+
+  if (questionsBank.length === 0) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "Tidak ada soal di kategori ini.";
+    questionSelect.appendChild(option);
+    return;
+  }
+
+  questionsBank.forEach((q, index) => {
+    const option = document.createElement("option");
+    option.value = index;
+    const displayQuestion = q.question.length > 70 ? q.question.substring(0, 70) + "..." : q.question;
+    option.textContent = `${index + 1}. ${displayQuestion}`;
+    questionSelect.appendChild(option);
+  });
+}
+
+// Fungsi untuk menghapus soal yang dipilih
+function deleteSelectedQuestion() {
+  const category = document.getElementById("deleteCategory").value;
+  const questionIndex = document.getElementById("questionToDelete").value;
+
+  if (!category || questionIndex === "" || questionIndex === null) {
+    alert("Pilih kategori dan soal yang ingin dihapus terlebih dahulu!");
+    return;
+  }
+
+  if (confirm("Apakah Anda yakin ingin menghapus soal ini? Tindakan ini tidak dapat dibatalkan.")) {
+    let questionsBank = JSON.parse(localStorage.getItem("questions_" + category) || "[]");
+
+    if (questionIndex >= 0 && questionIndex < questionsBank.length) {
+      // Dapatkan ID soal yang akan dihapus
+      const deletedQuestionId = questionsBank[questionIndex].id;
+
+      questionsBank.splice(questionIndex, 1);
+      localStorage.setItem("questions_" + category, JSON.stringify(questionsBank));
+      alert("Soal berhasil dihapus!");
+      loadQuestionsForDeletion();
+
+      // Opsional: Hapus ID soal ini dari riwayat semua pengguna
+      // Ini akan memastikan soal yang dihapus tidak lagi dianggap "sudah dijawab" oleh siapa pun.
+      // Jika Anda memiliki banyak pengguna, ini mungkin memakan waktu.
+      const allUsernames = Object.keys(localStorage).filter(key => key.startsWith("answered_questions_"));
+      allUsernames.forEach(userKey => {
+          let userAnsweredIds = JSON.parse(localStorage.getItem(userKey) || "[]");
+          const updatedUserAnsweredIds = userAnsweredIds.filter(id => id !== deletedQuestionId);
+          localStorage.setItem(userKey, JSON.stringify(updatedUserAnsweredIds));
+      });
+
+    } else {
+      alert("Soal tidak ditemukan atau indeks tidak valid.");
+    }
+  }
+}
+
+// Fungsi kembali ke halaman utama (reload halaman)
+function goToHomePage() {
+  location.reload();
+}
+
+document.addEventListener("DOMContentLoaded", populateCategoryDropdowns);
+
 </script>
 
 </body>
