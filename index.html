@@ -47,48 +47,67 @@
     button:hover {
       background-color: #1976d2;
     }
-    #rankingBarWrapper {
-      position: relative;
-      height: 40px;
-      overflow: hidden;
-    }
-    #updateBar {
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 0;
-      width: 100%;
-      background: #b2ebf2;
-      color: #006064;
+
+    /* Styling untuk kontainer pengumuman */
+    #updateBarContainer {
+      background: #b2ebf2; /* Warna latar belakang pengumuman */
+      color: #006064; /* Warna teks pengumuman */
+      padding: 10px 20px; /* Padding agar tidak terlalu mepet */
+      text-align: center; /* Teks di tengah */
       font-size: 14px;
-      padding: 10px;
-      white-space: nowrap;
-      animation: scrollUpdate 25s linear infinite;
+      overflow: hidden; /* Penting untuk menyembunyikan teks di luar kontainer */
+      white-space: nowrap; /* Penting agar teks tidak turun baris */
+      position: relative; /* Penting: parent untuk posisi absolut anak */
+      height: 40px; /* Tinggi tetap */
+      display: flex; /* Untuk vertikal alignment */
+      align-items: center; /* Pusatkan teks vertikal */
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Sedikit bayangan */
     }
-    #rankingBar {
-      position: relative;
-      z-index: 1;
-      background: transparent;
+
+    /* Styling untuk teks pengumuman yang berjalan */
+    #updateBar {
+      position: absolute; /* Posisi absolut di dalam kontainer */
+      left: 100%; /* Mulai dari luar layar kanan kontainer */
+      top: 50%; /* Pusatkan secara vertikal */
+      transform: translateY(-50%); /* Penyesuaian untuk centering vertikal yang sempurna */
+      white-space: nowrap; /* Pastikan teks tidak turun baris */
+      animation: scrollParallel 45s linear infinite; /* Animasi sejajar dengan durasi yang SAMA DAN LEBIH LAMA */
+    }
+
+    /* Styling untuk kontainer Ranking Leaderboard */
+    #rankingBarWrapper {
+      background: #42a5f5; /* Latar belakang untuk leaderboard, warna yang lebih menonjol */
       color: white;
-      padding: 10px;
+      padding: 10px 20px;
       font-weight: bold;
       font-size: 14px;
-      white-space: nowrap;
-      overflow: hidden;
+      overflow: hidden; /* Penting untuk menyembunyikan teks di luar kontainer */
+      white-space: nowrap; /* Penting agar teks tidak turun baris */
+      position: relative; /* Penting: parent untuk posisi absolut anak */
+      height: 40px; /* Tinggi tetap */
+      display: flex; /* Untuk vertikal alignment */
+      align-items: center; /* Pusatkan teks vertikal */
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Sedikit bayangan */
+      margin-top: -1px; /* Sedikit menempel dengan updateBar */
     }
+
+    /* Styling untuk teks peringkat yang berjalan */
     #rankingText {
-      display: inline-block;
-      padding-left: 100%;
-      animation: scroll 18s linear infinite;
+      position: absolute; /* Posisi absolut di dalam kontainer */
+      left: 100%; /* Mulai dari luar layar kanan kontainer */
+      top: 50%; /* Pusatkan secara vertikal */
+      transform: translateY(-50%); /* Penyesuaian untuk centering vertikal yang sempurna */
+      white-space: nowrap; /* Pastikan teks tidak turun baris */
+      animation: scrollParallel 45s linear infinite; /* Animasi sejajar dengan durasi yang SAMA DAN LEBIH LAMA */
     }
-    @keyframes scroll {
-      0% { transform: translateX(0); }
-      100% { transform: translateX(-100%); }
+
+    /* Keyframes untuk animasi gerakan sejajar (kecepatan piksel sama) */
+    @keyframes scrollParallel {
+      0% { left: 100%; } /* Teks mulai dari 100% lebar kontainer (di luar layar kanan) */
+      /* Bergerak ke kiri sejauh 1500 piksel. Sesuaikan nilai ini jika teks Anda sangat panjang. */
+      100% { left: -1500px; } /* Teks berakhir pada -1500px dari kiri kontainer (di luar layar kiri) */
     }
-    @keyframes scrollUpdate {
-      0% { transform: translateX(100%); }
-      100% { transform: translateX(-100%); }
-    }
+
     #clock {
       text-align: center;
       font-size: 18px;
@@ -118,8 +137,11 @@
 </head>
 <body onload="startClock(); tampilkanPeringkat(); muatNotifikasi();">
 
-<div id="rankingBarWrapper">
+<div id="updateBarContainer">
   <div id="updateBar">🔔 Versi 3.0 - Semua Fitur Aktif!</div>
+</div>
+
+<div id="rankingBarWrapper">
   <div id="rankingBar"><div id="rankingText"></div></div>
 </div>
 <div id="clock"></div>
@@ -158,8 +180,7 @@
     </select>
     <select id="questionCategory">
       <option value="">Pilih Kategori</option>
-      
-</select>
+    </select>
     <button onclick="simpanSoal()">Simpan Soal</button>
     <hr>
   </div>
@@ -168,16 +189,14 @@
     <h3>🗑️ Hapus Soal</h3>
     <select id="deleteCategory" onchange="loadQuestionsForDeletion()">
       <option value="">Pilih Kategori untuk Dihapus</option>
-      
-</select>
+    </select>
     <select id="questionToDelete">
       <option value="">Pilih Soal untuk Dihapus</option>
     </select>
     <button onclick="deleteSelectedQuestion()">Hapus Soal Terpilih</button>
   </div>
   
-  
-<button onclick="goToHomePage()">Kembali ke Halaman Utama</button>
+  <button onclick="goToHomePage()">Kembali ke Halaman Utama</button>
 </div>
 
 <div id="quizContainer" style="display:none">
@@ -223,15 +242,15 @@ function tampilkanPeringkat() {
 
 // Fungsi untuk memuat notifikasi/pengumuman
 function muatNotifikasi() {
-  const updateBar = document.getElementById("updateBar");
+  const updateBarElement = document.getElementById("updateBar");
   const savedUpdate = localStorage.getItem("updateMessage");
   if (savedUpdate !== null) {
-    updateBar.innerText = savedUpdate;
+    updateBarElement.innerText = savedUpdate;
   } else {
-    localStorage.setItem("updateMessage", updateBar.innerText);
+    localStorage.setItem("updateMessage", updateBarElement.innerText);
   }
   const infoInput = document.getElementById("infoMessage");
-  if (infoInput) infoInput.value = updateBar.innerText;
+  if (infoInput) infoInput.value = updateBarElement.innerText;
 }
 
 // Fungsi untuk menyimpan pemberitahuan dari admin
@@ -334,7 +353,9 @@ function mulaiKuis() {
   if (questions.length < 10) {
     const needed = 10 - questions.length;
     oldQuestions = oldQuestions.sort(() => Math.random() - 0.5); // Acak soal lama
-    questions.push(...oldQuestions.slice(0, needed));
+    // Filter oldQuestions agar tidak ada duplikasi jika sudah ada di 'questions' (dari newQuestions)
+    const uniqueOldQuestions = oldQuestions.filter(oq => !questions.some(q => q.id === oq.id));
+    questions.push(...uniqueOldQuestions.slice(0, needed));
   }
 
   // Pastikan total soal tidak lebih dari 10
@@ -398,14 +419,12 @@ function akhiriKuis() {
   localStorage.setItem("leaderboard_global", JSON.stringify(leaderboard.slice(0, 10)));
   tampilkanPeringkat();
 
-  // --- BAGIAN BARU: Simpan ID soal yang sudah dijawab ---
+  // Simpan ID soal yang sudah dijawab untuk pengguna saat ini
   let answeredQuestionIds = JSON.parse(localStorage.getItem(`answered_questions_${currentUser}`) || "[]");
   const currentQuizQuestionIds = questions.map(q => q.id).filter(id => id); // Ambil ID soal yang dimainkan
   
-  // Gabungkan dan pastikan tidak ada duplikasi
   const updatedAnsweredIds = [...new Set([...answeredQuestionIds, ...currentQuizQuestionIds])];
   localStorage.setItem(`answered_questions_${currentUser}`, JSON.stringify(updatedAnsweredIds));
-  // --- AKHIR BAGIAN BARU ---
 }
 
 // Fungsi untuk menyimpan soal baru oleh admin
@@ -423,9 +442,8 @@ function simpanSoal() {
     return;
   }
 
-  // --- BAGIAN BARU: Tambahkan ID unik ke soal ---
+  // Tambahkan ID unik ke soal
   const soalBaru = { id: Date.now(), question: q, options: { A: a, B: b, C: c, D: d }, answer: ans };
-  // --- AKHIR BAGIAN BARU ---
 
   const bankSoal = JSON.parse(localStorage.getItem("questions_" + cat) || "[]");
   bankSoal.push(soalBaru);
@@ -439,8 +457,6 @@ function simpanSoal() {
   document.getElementById("optD").value = "";
   document.getElementById("correctAnswer").value = "";
 }
-
-// --- FUNGSI UNTUK HAPUS SOAL DAN KATEGORI ---
 
 // Fungsi untuk mengisi dropdown kategori secara dinamis
 function populateCategoryDropdowns() {
@@ -502,7 +518,6 @@ function deleteSelectedQuestion() {
     let questionsBank = JSON.parse(localStorage.getItem("questions_" + category) || "[]");
 
     if (questionIndex >= 0 && questionIndex < questionsBank.length) {
-      // Dapatkan ID soal yang akan dihapus
       const deletedQuestionId = questionsBank[questionIndex].id;
 
       questionsBank.splice(questionIndex, 1);
@@ -510,11 +525,9 @@ function deleteSelectedQuestion() {
       alert("Soal berhasil dihapus!");
       loadQuestionsForDeletion();
 
-      // Opsional: Hapus ID soal ini dari riwayat semua pengguna
-      // Ini akan memastikan soal yang dihapus tidak lagi dianggap "sudah dijawab" oleh siapa pun.
-      // Jika Anda memiliki banyak pengguna, ini mungkin memakan waktu.
-      const allUsernames = Object.keys(localStorage).filter(key => key.startsWith("answered_questions_"));
-      allUsernames.forEach(userKey => {
+      // Hapus ID soal ini dari riwayat semua pengguna
+      const allUserKeys = Object.keys(localStorage).filter(key => key.startsWith("answered_questions_"));
+      allUserKeys.forEach(userKey => {
           let userAnsweredIds = JSON.parse(localStorage.getItem(userKey) || "[]");
           const updatedUserAnsweredIds = userAnsweredIds.filter(id => id !== deletedQuestionId);
           localStorage.setItem(userKey, JSON.stringify(updatedUserAnsweredIds));
