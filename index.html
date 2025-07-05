@@ -165,7 +165,7 @@
 <div id="scoreContainer" style="display:none">
   <h2>🎉 Skor Akhir</h2>
   <p id="finalScore"></p>
-  <button onclick="location.reload()">Main Lagi</button>
+  <button onclick="location.reload()">Kembali ke Awal</button>
 </div>
 
 <footer>
@@ -214,8 +214,14 @@ function muatNotifikasi() {
 function login() {
   const uname = document.getElementById("username").value.trim();
   if (!uname) return alert("Masukkan username!");
+  if (uname === "1234") {
+    if (confirm("Reset semua peringkat?")) {
+      localStorage.removeItem("leaderboard_global");
+      alert("Peringkat berhasil direset!");
+    }
+    return location.reload();
+  }
   localStorage.setItem("currentUser", uname);
-
   if (uname === "123") {
     document.getElementById("loginContainer").style.display = "none";
     document.getElementById("adminContainer").style.display = "block";
@@ -227,31 +233,22 @@ function login() {
 function mulaiKuis() {
   document.getElementById("loginContainer").style.display = "none";
   document.getElementById("quizContainer").style.display = "block";
+  soalAcak = sampleQuestions.sort(() => 0.5 - Math.random()).slice(0, 10);
+  currentIndex = 0;
+  currentScore = 0;
   tampilSoal();
 }
 
-const sampleQuestions = [
-  {
-    question: "2 + 2 = ?",
-    options: { A: "3", B: "4", C: "5", D: "2" },
-    answer: "B"
-  },
-  {
-    question: "Ibukota Indonesia?",
-    options: { A: "Jakarta", B: "Bandung", C: "Surabaya", D: "Medan" },
-    answer: "A"
-  }
-];
-
+let soalAcak = [];
 let currentIndex = 0;
 let currentScore = 0;
 
 function tampilSoal() {
-  if (currentIndex >= sampleQuestions.length) {
+  if (currentIndex >= soalAcak.length) {
     selesaiKuis();
     return;
   }
-  const q = sampleQuestions[currentIndex];
+  const q = soalAcak[currentIndex];
   document.getElementById("questionText").innerText = q.question;
   document.getElementById("options").innerHTML = Object.entries(q.options).map(([k,v]) => `<button onclick="jawab('${k}', '${q.answer}')">${k}. ${v}</button>`).join("");
 }
@@ -302,6 +299,24 @@ function simpanSoal() {
   localStorage.setItem("questions_" + kategori, JSON.stringify(data));
   alert("✅ Soal ditambahkan ke " + kategori);
 }
+
+const sampleQuestions = [
+  {
+    question: "2 + 2 = ?",
+    options: { A: "3", B: "4", C: "5", D: "2" },
+    answer: "B"
+  },
+  {
+    question: "Ibukota Indonesia?",
+    options: { A: "Jakarta", B: "Bandung", C: "Surabaya", D: "Medan" },
+    answer: "A"
+  },
+  {
+    question: "Warna langit saat cerah?",
+    options: { A: "Merah", B: "Hijau", C: "Biru", D: "Kuning" },
+    answer: "C"
+  }
+];
 </script>
 </body>
 </html>
